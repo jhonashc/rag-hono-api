@@ -1,9 +1,9 @@
 import { Hono } from 'hono';
 
-import filesRouter from '@/routes/files.routes';
+import documentsRouter from '@/routes/documents.routes';
 
 const routes = new Hono();
 
-routes.route('/files', filesRouter);
+routes.route('/documents', documentsRouter);
 
 export default routes;
