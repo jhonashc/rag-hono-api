@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 
-import filesRouter from '@/routes/files';
+import filesRouter from '@/routes/files.routes';
 
 const routes = new Hono();
 

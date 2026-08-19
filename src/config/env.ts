@@ -1,4 +1,4 @@
-import { envSchema, type Env } from '@/schemas/env';
+import { envSchema, type Env } from '@/schemas/env.schema';
 
 const envServer = envSchema.safeParse(process.env);
 
