@@ -1,5 +1,3 @@
-/* import postgres from 'postgres'; */
-
 import { SQL } from 'bun';
 
 import { env } from '@/config/env';
