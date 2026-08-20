@@ -14,12 +14,17 @@ A simple REST API built with Bun, Hono, PostgreSQL and pgvector.
    $ docker compose up -d
    ```
 
-4. Install dependencies:
+4. Run the database migrations:
+   ```bash
+   $ bun run db:migrate
+   ```
+
+5. Install dependencies:
    ```bash
    $ bun install
    ```
 
-5. Running the app:
+6. Running the app:
 
    ```bash
    # development mode
