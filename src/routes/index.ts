@@ -1,9 +1,9 @@
 import { Hono } from 'hono';
 
-import documentsRouter from '@/routes/documents.routes';
+import conversationsRouter from '@/routes/conversations.route';
 
 const routes = new Hono();
 
-routes.route('/documents', documentsRouter);
+routes.route('/conversations', conversationsRouter);
 
 export default routes;
