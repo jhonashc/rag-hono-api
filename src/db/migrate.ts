@@ -1,21 +1,26 @@
-import { pg } from '@/db/client';
+import { sql } from '@/db/client';
 
 async function migrate() {
   const sqlFile = Bun.file(new URL('./db.sql', import.meta.url));
-  const sql = await sqlFile.text();
+  const sqlText = await sqlFile.text();
 
-  console.log('🚀 Iniciando migración...');
+  console.log('🚀 Starting migration...');
 
   try {
-    await pg.begin(async (tx) => {
-      await tx.unsafe(sql);
+    // Run the migration inside a transaction.
+    // If any statement fails, all changes will be rolled back.
+    await sql.begin(async (tx) => {
+      await tx.unsafe(sqlText);
     });
-    console.log('✅ Migración ejecutada correctamente');
+
+    console.log('✅ Migration executed successfully');
   } catch (err) {
-    console.error('❌ Error en la migración, se hizo rollback:', err);
+    // The transaction has already been rolled back at this point.
+    console.error('❌ Migration failed, changes were rolled back:', err);
     process.exit(1);
   } finally {
-    await pg.close();
+    // Close the database connection regardless of whether the migration succeeded or failed.
+    await sql.close();
   }
 }
 

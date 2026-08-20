@@ -1,10 +1,9 @@
 import { envSchema, type Env } from '@/schemas/env.schema';
-import { validator } from '@/validation';
 
-const envServer = validator.validate<Env>(envSchema, process.env);
+const envServer = envSchema.safeParse(process.env);
 
 if (!envServer.success) {
-  console.error(envServer.errors);
+  console.error(envServer.error.issues);
   process.exit(1);
 }
 
