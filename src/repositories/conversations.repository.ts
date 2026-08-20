@@ -1,8 +1,5 @@
 import { sql } from '@/db/client';
-import type {
-  Conversation,
-  ConversationRow,
-} from '@/interfaces/conversations.interface';
+import type { Conversation, ConversationRow } from '@/interfaces/conversations.interface';
 import { ConversationsMapper } from '@/mappers/conversations.mapper';
 
 export class ConversationsRepository {

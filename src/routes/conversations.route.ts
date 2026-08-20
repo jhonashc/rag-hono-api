@@ -7,14 +7,12 @@ import { ConversationsService } from '@/services/conversation.service';
 
 const router = new Hono();
 
-const conversationsService = new ConversationsService(
-  new ConversationsRepository(),
-);
+const conversationsService = new ConversationsService(new ConversationsRepository());
 
 router.post('/', zValidator('json', createConversationSchema), async (c) => {
   const input = c.req.valid('json');
-  const conversation = await conversationsService.createConversation(input);
-  return c.json(conversation, 201);
+  const createdConversation = await conversationsService.createConversation(input);
+  return c.json(createdConversation, 201);
 });
 
 export default router;

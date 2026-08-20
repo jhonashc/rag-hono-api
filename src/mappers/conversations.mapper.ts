@@ -1,7 +1,4 @@
-import type {
-  Conversation,
-  ConversationRow,
-} from '@/interfaces/conversations.interface';
+import type { Conversation, ConversationRow } from '@/interfaces/conversations.interface';
 
 export class ConversationsMapper {
   static toDomain(row: ConversationRow): Conversation {
