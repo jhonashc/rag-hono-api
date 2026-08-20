@@ -8,7 +8,7 @@ A simple REST API built with Bun, Hono, PostgreSQL and pgvector.
 
 2. Update the environment variables in the `.env` file.
 
-3. Start the PostgreSQL container:
+3. Start the database container:
 
    ```bash
    $ docker compose up -d
