@@ -5,7 +5,7 @@ import { ConversationsMapper } from '@/mappers/conversations.mapper';
 export class ConversationsRepository {
   constructor() {}
 
-  async createConversation(title: string): Promise<Conversation> {
+  async createConversation(title: string): Promise<Conversation | null> {
     const query = `
         INSERT INTO conversations (title)
         VALUES ($1)
@@ -14,7 +14,7 @@ export class ConversationsRepository {
 
     const [row] = await sql.unsafe<ConversationRow[]>(query, [title]);
 
-    return ConversationsMapper.toDomain(row);
+    return row ? ConversationsMapper.toDomain(row) : null;
   }
 
   async getConversationById(id: string): Promise<Conversation | null> {
