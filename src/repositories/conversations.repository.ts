@@ -16,4 +16,16 @@ export class ConversationsRepository {
 
     return ConversationsMapper.toDomain(row);
   }
+
+  async getConversationById(id: string): Promise<Conversation | null> {
+    const query = `
+        SELECT id, title, created_at, updated_at
+        FROM conversations
+        WHERE id = $1
+    `;
+
+    const [row] = await sql.unsafe<ConversationRow[]>(query, [id]);
+
+    return row ? ConversationsMapper.toDomain(row) : null;
+  }
 }
