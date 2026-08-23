@@ -19,7 +19,6 @@ const conversationsService = new ConversationsService(
   new DocumentsService(new DocumentsRepository(), new ChunkingService(), new EmbeddingsService()),
 );
 
-// TODO: zValidator no cada en app.onError global
 router.post('/', zValidator('form', createConversationSchema), async (c) => {
   const createConversationInput = c.req.valid('form');
   const createdConversation = await conversationsService.createConversation(createConversationInput);

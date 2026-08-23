@@ -7,4 +7,4 @@ if (!envServer.success) {
   process.exit(1);
 }
 
-export const env: Env = envServer.data as Env;
+export const env: Env = envServer.data;
