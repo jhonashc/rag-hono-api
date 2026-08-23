@@ -7,6 +7,7 @@ export const envSchema = z.object({
   POSTGRES_DB: z.string().min(1),
   POSTGRES_PORT: z.coerce.number().int().positive(),
   DATABASE_URL: z.string().min(1),
+  OPENROUTER_API_KEY: z.string().min(1),
 });
 
 export type Env = z.infer<typeof envSchema>;
