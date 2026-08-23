@@ -1,5 +1,5 @@
 import { HashHelper } from '@/helpers/hash.helper';
-import { DocumentsHelper } from '@/helpers/pdf.helper';
+import { PdfHelper } from '@/helpers/pdf.helper';
 
 import type {
   CreateDocumentChunkWithEmbeddingInput,
@@ -74,7 +74,7 @@ export class DocumentsService {
     const arrayBuffer = await file.arrayBuffer();
     const fileHash = await HashHelper.getSha256Hex(arrayBuffer);
 
-    const { pagesText, totalPages } = await DocumentsHelper.extractPdfText(arrayBuffer);
+    const { pagesText, totalPages } = await PdfHelper.extractText(arrayBuffer);
 
     const pages: PageContent[] = [];
 
