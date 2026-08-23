@@ -1,3 +1,5 @@
+import type { SQL } from 'bun';
+
 import { sql } from '@/db/client';
 
 import type { Conversation, ConversationRow } from '@/interfaces/conversations.interface';
@@ -7,7 +9,7 @@ import { ConversationsMapper } from '@/mappers/conversations.mapper';
 import type { CreateConversationInput, GetConverstaionByIdInput } from '@/schemas/conversations.schema';
 
 export class ConversationsRepository {
-  async createConversation(input: CreateConversationInput): Promise<Conversation | null> {
+  async createConversation(input: CreateConversationInput, tx: SQL = sql): Promise<Conversation | null> {
     const [row] = await sql<ConversationRow[]>`
       INSERT INTO conversations (title)
       VALUES (${input.title})
