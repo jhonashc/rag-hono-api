@@ -33,7 +33,6 @@ CREATE TABLE document_pages (
     document_id UUID NOT NULL REFERENCES documents(id) ON DELETE RESTRICT, -- Documento origen de esta página
     page_number INT NOT NULL,                     -- Número secuencial de la página en el documento
     page_text TEXT NOT NULL,                      -- Texto completo extraído de la página sin fragmentar
-    token_count INT NOT NULL,                     -- Total de tokens calculados para todo el texto de esta página
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(), -- Fecha y hora de procesamiento de la página
     CONSTRAINT unique_document_page UNIQUE (document_id, page_number) -- Control de duplicados de páginas por documento
 );
