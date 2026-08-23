@@ -1,31 +1,29 @@
 import { sql } from '@/db/client';
+
 import type { Conversation, ConversationRow } from '@/interfaces/conversations.interface';
+
 import { ConversationsMapper } from '@/mappers/conversations.mapper';
 
-export class ConversationsRepository {
-  constructor() {}
+import type { CreateConversationInput, GetConverstaionByIdInput } from '@/schemas/conversations.schema';
 
-  async createConversation(title: string): Promise<Conversation | null> {
-    const query = `
-        INSERT INTO conversations (title)
-        VALUES ($1)
-        RETURNING id, title, created_at, updated_at
+export class ConversationsRepository {
+  async createConversation(input: CreateConversationInput): Promise<Conversation | null> {
+    const [row] = await sql<ConversationRow[]>`
+      INSERT INTO conversations (title)
+      VALUES (${input.title})
+      RETURNING id, title, created_at, updated_at
     `;
 
-    const [row] = await sql.unsafe<ConversationRow[]>(query, [title]);
-
-    return row ? ConversationsMapper.toDomain(row) : null;
+    return row ? ConversationsMapper.toConversation(row) : null;
   }
 
-  async getConversationById(id: string): Promise<Conversation | null> {
-    const query = `
-        SELECT id, title, created_at, updated_at
-        FROM conversations
-        WHERE id = $1
+  async getConversationById(input: GetConverstaionByIdInput): Promise<Conversation | null> {
+    const [row] = await sql<ConversationRow[]>`
+      SELECT id, title, created_at, updated_at
+      FROM conversations
+      WHERE id = ${input.id}
     `;
 
-    const [row] = await sql.unsafe<ConversationRow[]>(query, [id]);
-
-    return row ? ConversationsMapper.toDomain(row) : null;
+    return row ? ConversationsMapper.toConversation(row) : null;
   }
 }
