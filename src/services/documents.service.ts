@@ -72,7 +72,7 @@ export class DocumentsService {
 
   private async parseDocument(file: File): Promise<ParsedDocument> {
     const arrayBuffer = await file.arrayBuffer();
-    const fileHash = await HashHelper.getDocumentHash(arrayBuffer);
+    const fileHash = await HashHelper.getSha256Hex(arrayBuffer);
 
     const { pagesText, totalPages } = await DocumentsHelper.extractPdfText(arrayBuffer);
 
