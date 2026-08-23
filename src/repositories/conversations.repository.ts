@@ -10,7 +10,7 @@ import type { CreateConversationInput, GetConverstaionByIdInput } from '@/schema
 
 export class ConversationsRepository {
   async createConversation(input: CreateConversationInput, tx: SQL = sql): Promise<Conversation | null> {
-    const [row] = await sql<ConversationRow[]>`
+    const [row] = await tx<ConversationRow[]>`
       INSERT INTO conversations (title)
       VALUES (${input.title})
       RETURNING id, title, created_at, updated_at
