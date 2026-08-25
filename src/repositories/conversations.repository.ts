@@ -6,7 +6,7 @@ import type { Conversation, ConversationRow } from '@/interfaces/conversations.i
 
 import { ConversationsMapper } from '@/mappers/conversations.mapper';
 
-import type { CreateConversationInput, GetConverstaionByIdInput } from '@/schemas/conversations.schema';
+import type { CreateConversationInput, GetConversationByIdInput } from '@/schemas/conversations.schema';
 
 export class ConversationsRepository {
   async createConversation(input: CreateConversationInput, tx: SQL = sql): Promise<Conversation | null> {
@@ -19,7 +19,7 @@ export class ConversationsRepository {
     return row ? ConversationsMapper.toConversation(row) : null;
   }
 
-  async getConversationById(input: GetConverstaionByIdInput): Promise<Conversation | null> {
+  async getConversationById(input: GetConversationByIdInput): Promise<Conversation | null> {
     const [row] = await sql<ConversationRow[]>`
       SELECT id, title, created_at, updated_at
       FROM conversations
