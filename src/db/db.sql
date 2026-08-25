@@ -23,8 +23,7 @@ CREATE TABLE documents (
     file_hash CHAR(64) NOT NULL,                  -- Hash SHA-256 para validación de contenido único
     file_size_bytes BIGINT NOT NULL,              -- Tamaño del archivo expresado en bytes
     total_pages INT NOT NULL,                     -- Cantidad total de páginas detectadas en el documento
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(), -- Fecha y hora en que se procesó/subió el archivo
-    CONSTRAINT unique_file_hash UNIQUE (file_hash) -- Garantiza que el mismo archivo no se suba dos veces en el sistema
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() -- Fecha y hora en que se procesó/subió el archivo
 );
 
 -- 4. PÁGINAS DEL DOCUMENTO
@@ -83,6 +82,7 @@ CREATE TABLE message_sources (
 -- -----------------------------------------------------------------------------
 -- ÍNDICES DE RENDIMIENTO
 -- -----------------------------------------------------------------------------
+CREATE INDEX idx_documents_file_hash ON documents (file_hash);
 CREATE INDEX idx_pages_document ON document_pages(document_id);
 CREATE INDEX idx_chunks_page ON document_chunks(page_id);
 CREATE INDEX idx_messages_conversation ON chat_messages(conversation_id);
