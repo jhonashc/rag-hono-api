@@ -4,6 +4,7 @@ import { PdfHelper } from '@/helpers/pdf.helper';
 import type {
   CreateDocumentChunkWithEmbeddingInput,
   CreateDocumentPageWithChunksInput,
+  Document,
   PageContent,
   ParsedDocument,
 } from '@/interfaces/documents.interface';
@@ -21,7 +22,7 @@ export class DocumentsService {
   ) {}
 
   // TODO: handle expcetion
-  async createDocumentWithContent(conversationId: string, file: File) {
+  async createDocumentWithContent(conversationId: string, file: File): Promise<Document | null> {
     const { fileName, fileHash, fileSizeBytes, totalPages, pages } = await this.parseDocument(file);
 
     const pagesWithChunks: CreateDocumentPageWithChunksInput[] = [];
@@ -56,7 +57,7 @@ export class DocumentsService {
       });
     }
 
-    const document = await this.documentsRepository.createDocumentWithContent({
+    const createdDocument = await this.documentsRepository.createDocumentWithContent({
       document: {
         conversationId,
         fileName,
@@ -67,7 +68,7 @@ export class DocumentsService {
       pages: pagesWithChunks,
     });
 
-    return document;
+    return createdDocument;
   }
 
   private async parseDocument(file: File): Promise<ParsedDocument> {
