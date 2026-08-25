@@ -1,16 +1,19 @@
 {
   "name": "rag-hono-api",
+  "version": "1.0.0",
   "scripts": {
     "dev": "bun run --hot src/index.ts",
     "db:migrate": "bun run src/db/migrate.ts"
   },
   "dependencies": {
+    "@hono/zod-openapi": "^1.6.1",
     "@hono/zod-validator": "^0.9.0",
     "@langchain/textsplitters": "^1.0.1",
+    "@scalar/hono-api-reference": "^0.11.16",
     "hono": "^4.13.3",
     "openai": "^7.5.0",
-    "unpdf": "^1.8.1",
-    "zod": "^4.4.3"
+    "stoker": "^2.0.1",
+    "unpdf": "^1.8.1"
   },
   "devDependencies": {
     "@types/bun": "latest"
