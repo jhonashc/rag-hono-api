@@ -1,3 +1,9 @@
+import { SQL } from 'bun';
+
+import { HTTPException } from 'hono/http-exception';
+
+import * as HttpStatusCodes from 'stoker/http-status-codes';
+
 import { HashHelper } from '@/helpers/hash.helper';
 import { PdfHelper } from '@/helpers/pdf.helper';
 
@@ -20,56 +26,6 @@ export class DocumentsService {
     private readonly chunkingService: ChunkingService,
     private readonly embeddingsService: EmbeddingsService,
   ) {}
-
-  // TODO: handle expcetion
-  async createDocumentWithContent(conversationId: string, file: File): Promise<Document | null> {
-    const { fileName, fileHash, fileSizeBytes, totalPages, pages } = await this.parseDocument(file);
-
-    const pagesWithChunks: CreateDocumentPageWithChunksInput[] = [];
-
-    for (const page of pages) {
-      const chunksWithEmbeddings: CreateDocumentChunkWithEmbeddingInput[] = [];
-
-      for (let i = 0; i < page.chunks.length; i++) {
-        const chunk = page.chunks[i];
-
-        const chunkEmbeddings = await this.embeddingsService.generateEmbeddings(chunk.chunkText);
-
-        chunksWithEmbeddings.push({
-          chunk: {
-            chunkIndex: chunk.chunkIndex,
-            chunkText: chunk.chunkText,
-            startChar: chunk.startChar,
-            endChar: chunk.endChar,
-          },
-          embedding: {
-            embedding: chunkEmbeddings ?? [], // TODO: validate embedding
-          },
-        });
-      }
-
-      pagesWithChunks.push({
-        page: {
-          pageNumber: page.pageNumber,
-          pageText: page.pageText,
-        },
-        chunks: chunksWithEmbeddings,
-      });
-    }
-
-    const createdDocument = await this.documentsRepository.createDocumentWithContent({
-      document: {
-        conversationId,
-        fileName,
-        fileHash,
-        fileSizeBytes,
-        totalPages,
-      },
-      pages: pagesWithChunks,
-    });
-
-    return createdDocument;
-  }
 
   private async parseDocument(file: File): Promise<ParsedDocument> {
     const arrayBuffer = await file.arrayBuffer();
@@ -97,5 +53,87 @@ export class DocumentsService {
       totalPages,
       pages,
     };
+  }
+
+  private async parseDocumentIntoPages(file: File): Promise<ParsedDocument> {
+    return this.parseDocument(file);
+  }
+
+  private async attachEmbeddings(pages: PageContent[]): Promise<CreateDocumentPageWithChunksInput[]> {
+    const pagesWithChunks: CreateDocumentPageWithChunksInput[] = [];
+
+    for (const page of pages) {
+      const chunksWithEmbeddings: CreateDocumentChunkWithEmbeddingInput[] = [];
+
+      for (const chunk of page.chunks) {
+        const embedding = await this.embeddingsService.generateEmbeddings(chunk.chunkText);
+
+        if (!embedding) {
+          throw new HTTPException(HttpStatusCodes.BAD_GATEWAY, {
+            message: `Failed to generate embedding for chunk ${chunk.chunkIndex} of page ${page.pageNumber}`,
+          });
+        }
+
+        chunksWithEmbeddings.push({
+          chunk: {
+            chunkIndex: chunk.chunkIndex,
+            chunkText: chunk.chunkText,
+            startChar: chunk.startChar,
+            endChar: chunk.endChar,
+          },
+          embedding: {
+            embedding,
+          },
+        });
+      }
+
+      pagesWithChunks.push({
+        page: {
+          pageNumber: page.pageNumber,
+          pageText: page.pageText,
+        },
+        chunks: chunksWithEmbeddings,
+      });
+    }
+
+    return pagesWithChunks;
+  }
+
+  async buildDocumentContent(file: File): Promise<{
+    fileName: string;
+    fileHash: string;
+    fileSizeBytes: number;
+    totalPages: number;
+    pages: CreateDocumentPageWithChunksInput[];
+  }> {
+    const { fileName, fileHash, fileSizeBytes, totalPages, pages } = await this.parseDocumentIntoPages(file);
+
+    const pagesWithChunks = await this.attachEmbeddings(pages);
+
+    return {
+      fileName,
+      fileHash,
+      fileSizeBytes,
+      totalPages,
+      pages: pagesWithChunks,
+    };
+  }
+
+  async createDocumentWithContent(conversationId: string, file: File, tx?: SQL): Promise<Document | null> {
+    const { fileName, fileHash, fileSizeBytes, totalPages, pages } = await this.buildDocumentContent(file);
+
+    return this.documentsRepository.createDocumentWithContent(
+      {
+        document: {
+          conversationId,
+          fileName,
+          fileHash,
+          fileSizeBytes,
+          totalPages,
+        },
+        pages,
+      },
+      tx,
+    );
   }
 }
