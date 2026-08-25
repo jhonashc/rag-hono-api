@@ -92,7 +92,7 @@ export class DocumentsRepository {
   async createChunkEmbedding(input: CreateChunkEmbeddingInput, tx: SQL = sql): Promise<ChunkEmbedding | null> {
     const [row] = await tx<ChunkEmbeddingRow[]>`
       INSERT INTO chunk_embeddings (chunk_id, embedding)
-      VALUES (${input.chunkId}, ${input.embedding}::vector)
+      VALUES (${input.chunkId}, ${JSON.stringify(input.embedding)}::vector)
       RETURNING id, chunk_id, embedding, created_at
     `;
 
@@ -105,7 +105,10 @@ export class DocumentsRepository {
     if (!createdDocument) throw new Error('Failed to create document');
 
     const createdDocumentPages = await this.createDocumentPages(
-      input.pages.map((p) => ({ ...p.page, documentId: createdDocument.id })),
+      input.pages.map((p) => ({
+        ...p.page,
+        documentId: createdDocument.id,
+      })),
       tx,
     );
 
@@ -116,13 +119,22 @@ export class DocumentsRepository {
       const chunkInput = input.pages[i].chunks;
 
       const createdDocumentChunks = await this.createDocumentChunks(
-        chunkInput.map((c) => ({ ...c.chunk, pageId: createdDocumentPage.id })),
+        chunkInput.map((c) => ({
+          ...c.chunk,
+          pageId: createdDocumentPage.id,
+        })),
         tx,
       );
       if (!createdDocumentChunks) throw new Error('Failed to create document chunks');
 
       for (let j = 0; j < createdDocumentChunks.length; j++) {
-        await this.createChunkEmbedding({ ...chunkInput[j].embedding, chunkId: createdDocumentChunks[j].id }, tx);
+        await this.createChunkEmbedding(
+          {
+            ...chunkInput[j].embedding,
+            chunkId: createdDocumentChunks[j].id,
+          },
+          tx,
+        );
       }
     }
 
