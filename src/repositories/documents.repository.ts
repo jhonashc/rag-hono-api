@@ -7,10 +7,8 @@ import type {
   ChunkEmbeddingRow,
   CreateChunkEmbeddingInput,
   CreateDocumentChunkInput,
-  CreateDocumentChunkRowInput,
   CreateDocumentInput,
   CreateDocumentPageInput,
-  CreateDocumentPageRowInput,
   CreateDocumentWithContentInput,
   Document,
   DocumentChunk,
@@ -44,20 +42,17 @@ export class DocumentsRepository {
   }
 
   async createDocumentPages(inputs: CreateDocumentPageInput[], tx: SQL = sql): Promise<DocumentPage[] | null> {
-    const rowsToInsert: CreateDocumentPageRowInput[] = inputs.map((createDocumentPageInput) => ({
-      document_id: createDocumentPageInput.documentId,
-      page_number: createDocumentPageInput.pageNumber,
-      page_text: createDocumentPageInput.pageText,
-    }));
+    const createdPages: DocumentPage[] = [];
 
-    const insertedRows = await tx<DocumentPageRow[]>`
-      INSERT INTO document_pages ${tx(rowsToInsert)}
-      RETURNING id, document_id, page_number, page_text, created_at
-    `;
+    for (const pageInput of inputs) {
+      const createdPage = await this.createDocumentPage(pageInput, tx);
 
-    return insertedRows.length > 0
-      ? insertedRows.map((insertedRow) => DocumentsMapper.toDocumentPage(insertedRow))
-      : null;
+      if (!createdPage) return null;
+
+      createdPages.push(createdPage);
+    }
+
+    return createdPages.length > 0 ? createdPages : null;
   }
 
   async createDocumentChunk(input: CreateDocumentChunkInput, tx: SQL = sql): Promise<DocumentChunk | null> {
@@ -71,22 +66,17 @@ export class DocumentsRepository {
   }
 
   async createDocumentChunks(inputs: CreateDocumentChunkInput[], tx: SQL = sql): Promise<DocumentChunk[] | null> {
-    const rowsToInsert: CreateDocumentChunkRowInput[] = inputs.map((createDocumentChunkInput) => ({
-      page_id: createDocumentChunkInput.pageId,
-      chunk_index: createDocumentChunkInput.chunkIndex,
-      chunk_text: createDocumentChunkInput.chunkText,
-      start_char: createDocumentChunkInput.startChar,
-      end_char: createDocumentChunkInput.endChar,
-    }));
+    const createdChunks: DocumentChunk[] = [];
 
-    const insertedRows = await tx<DocumentChunkRow[]>`
-      INSERT INTO document_chunks ${tx(rowsToInsert)}
-      RETURNING id, page_id, chunk_index, chunk_text, start_char, end_char, created_at
-    `;
+    for (const chunkInput of inputs) {
+      const createdChunk = await this.createDocumentChunk(chunkInput, tx);
 
-    return insertedRows.length > 0
-      ? insertedRows.map((insertedRow) => DocumentsMapper.toDocumentChunk(insertedRow))
-      : null;
+      if (!createdChunk) return null;
+
+      createdChunks.push(createdChunk);
+    }
+
+    return createdChunks.length > 0 ? createdChunks : null;
   }
 
   async createChunkEmbedding(input: CreateChunkEmbeddingInput, tx: SQL = sql): Promise<ChunkEmbedding | null> {

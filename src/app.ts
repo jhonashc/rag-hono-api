@@ -27,7 +27,7 @@ app.get(
   '/reference',
   Scalar({
     url: '/doc',
-    theme: 'deepSpace',
+    theme: 'none',
     layout: 'classic',
     defaultHttpClient: {
       targetKey: 'js',

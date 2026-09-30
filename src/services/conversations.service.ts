@@ -20,19 +20,15 @@ export class ConversationsService {
   ) {}
 
   async createConversation(input: CreateConversationInput): Promise<Conversation> {
-    return this.transactionManager.run(async (tx) => {
-      const createdConverstaion = await this.conversationsRepository.createConversation(input, tx);
+    const createdConverstaion = await this.conversationsRepository.createConversation(input);
 
-      if (!createdConverstaion) {
-        throw new HTTPException(HttpStatusCodes.CONFLICT, {
-          message: 'The conversation could not be created',
-        });
-      }
+    if (!createdConverstaion) {
+      throw new HTTPException(HttpStatusCodes.CONFLICT, {
+        message: 'The conversation has not been created',
+      });
+    }
 
-      await this.documentsService.createDocumentWithContent(createdConverstaion.id, input.file, tx);
-
-      return createdConverstaion;
-    });
+    return createdConverstaion;
   }
 
   async getConversationById(input: GetConversationByIdInput): Promise<Conversation> {

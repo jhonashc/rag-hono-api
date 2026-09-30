@@ -58,7 +58,6 @@ export interface DocumentPage {
 }
 
 export interface CreateDocumentPageInput extends Omit<DocumentPage, 'id' | 'createdAt'> {}
-export interface CreateDocumentPageRowInput extends Omit<DocumentPageRow, 'id' | 'created_at'> {}
 
 export interface DocumentChunkRow {
   id: string;
@@ -81,7 +80,6 @@ export interface DocumentChunk {
 }
 
 export interface CreateDocumentChunkInput extends Omit<DocumentChunk, 'id' | 'createdAt'> {}
-export interface CreateDocumentChunkRowInput extends Omit<DocumentChunkRow, 'id' | 'created_at'> {}
 
 export interface ChunkEmbeddingRow {
   id: string;

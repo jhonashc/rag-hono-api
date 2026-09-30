@@ -9,8 +9,8 @@ import { ConversationsMapper } from '@/mappers/conversations.mapper';
 import type { CreateConversationInput, GetConversationByIdInput } from '@/schemas/conversations.schema';
 
 export class ConversationsRepository {
-  async createConversation(input: CreateConversationInput, tx: SQL = sql): Promise<Conversation | null> {
-    const [row] = await tx<ConversationRow[]>`
+  async createConversation(input: CreateConversationInput): Promise<Conversation | null> {
+    const [row] = await sql<ConversationRow[]>`
       INSERT INTO conversations (title)
       VALUES (${input.title})
       RETURNING id, title, created_at, updated_at

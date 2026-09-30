@@ -1,5 +1,7 @@
 import { createRoute, OpenAPIHono } from '@hono/zod-openapi';
 
+import { HTTPException } from 'hono/http-exception';
+
 import * as HttpStatusCodes from 'stoker/http-status-codes';
 
 import { TransactionManager } from '@/db/transaction';
@@ -7,25 +9,42 @@ import { TransactionManager } from '@/db/transaction';
 import { ConversationsRepository } from '@/repositories/conversations.repository';
 
 import {
-  getConversationByIdResponseSchema,
   createConversationSchema,
   getConversationByIdSchema,
   createConversationResponseSchema,
+  createConversationDocumentSchema,
 } from '@/schemas/conversations.schema';
+import { createMessageResponseSchema, createMessageSchema } from '@/schemas/messages.schema';
+import { createDocumentResponseSchema } from '@/schemas/documents.schema';
 import { errorResponseSchema } from '@/schemas/error.schema';
 
 import { DocumentsRepository } from '@/repositories/documents.repository';
+import { MessagesRepository } from '@/repositories/messages.repository';
 
 import { ConversationsService } from '@/services/conversations.service';
 import { DocumentsService } from '@/services/documents.service';
 import { ChunkingService } from '@/services/chunking.service';
 import { EmbeddingsService } from '@/services/embeddings.service';
+import { MessagesService } from '@/services/messages.service';
 
 const router = new OpenAPIHono();
 
+const documentsService = new DocumentsService(
+  new DocumentsRepository(),
+  new ChunkingService(),
+  new EmbeddingsService(),
+);
+
 const conversationsService = new ConversationsService(
   new ConversationsRepository(),
-  new DocumentsService(new DocumentsRepository(), new ChunkingService(), new EmbeddingsService()),
+  documentsService,
+  new TransactionManager(),
+);
+
+const messagesService = new MessagesService(
+  new ConversationsRepository(),
+  new MessagesRepository(),
+  new EmbeddingsService(),
   new TransactionManager(),
 );
 
@@ -33,15 +52,15 @@ const createConversationRoute = createRoute({
   method: 'post',
   path: '/',
   tags: ['Conversations'],
-  summary: 'Create a conversation from a PDF',
-  description: 'Creates a new conversation by uploading a PDF file.',
+  summary: 'Create a conversation',
+  description: 'Creates a new conversation with a title.',
   operationId: 'createConversation',
   request: {
     body: {
       required: true,
-      description: 'Conversation data and the PDF file to process.',
+      description: 'Conversation data.',
       content: {
-        'multipart/form-data': {
+        'application/json': {
           schema: createConversationSchema,
         },
       },
@@ -57,7 +76,7 @@ const createConversationRoute = createRoute({
       },
     },
     [HttpStatusCodes.BAD_REQUEST]: {
-      description: 'Invalid request data or file',
+      description: 'Invalid request data',
       content: {
         'application/json': {
           schema: errorResponseSchema,
@@ -68,27 +87,111 @@ const createConversationRoute = createRoute({
 });
 
 router.openapi(createConversationRoute, async (c) => {
-  const createConversationInput = c.req.valid('form');
-  const createdConversation = await conversationsService.createConversation(createConversationInput);
-  return c.json({ status: true, data: createdConversation }, HttpStatusCodes.CREATED);
+  const createdConversation = await conversationsService.createConversation(c.req.valid('json'));
+
+  return c.json(
+    {
+      success: true,
+      data: createdConversation,
+    },
+    HttpStatusCodes.CREATED,
+  );
 });
 
-const getConversationByIdRoute = createRoute({
-  method: 'get',
-  path: '/{id}',
+const createConversationDocumentRoute = createRoute({
+  method: 'post',
+  path: '/:id/documents',
   tags: ['Conversations'],
-  summary: 'Get a conversation by ID',
-  description: 'Retrieves a conversation using its unique identifier.',
-  operationId: 'getConversationById',
+  summary: 'Upload a conversation document',
+  description: 'Uploads a PDF document to a conversation, splits it into chunks and generates embeddings.',
+  operationId: 'uploadConversationDocument',
   request: {
     params: getConversationByIdSchema,
+    body: {
+      required: true,
+      description: 'PDF file, maximum 5MB.',
+      content: {
+        'multipart/form-data': {
+          schema: createConversationDocumentSchema,
+        },
+      },
+    },
   },
   responses: {
-    [HttpStatusCodes.OK]: {
-      description: 'Conversation retrieved successfully',
+    [HttpStatusCodes.CREATED]: {
+      description: 'Document uploaded successfully',
       content: {
         'application/json': {
-          schema: getConversationByIdResponseSchema,
+          schema: createDocumentResponseSchema,
+        },
+      },
+    },
+    [HttpStatusCodes.BAD_REQUEST]: {
+      description: 'Invalid request data',
+      content: {
+        'application/json': {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+router.openapi(createConversationDocumentRoute, async (c) => {
+  const { id } = c.req.valid('param');
+  const { file } = c.req.valid('form');
+
+  const createdDocumentWithContent = await documentsService.createDocumentWithContent(id, file);
+
+  if (!createdDocumentWithContent) {
+    throw new HTTPException(HttpStatusCodes.INTERNAL_SERVER_ERROR, {
+      message: 'The document has not been created',
+    });
+  }
+
+  return c.json(
+    {
+      success: true,
+      data: createdDocumentWithContent,
+    },
+    HttpStatusCodes.CREATED,
+  );
+});
+
+const createMessageRoute = createRoute({
+  method: 'post',
+  path: '/:id/messages',
+  tags: ['Conversations'],
+  summary: 'Send a message',
+  description:
+    'Sends a user message, retrieves relevant document chunks, generates an assistant answer and stores both messages with their sources.',
+  operationId: 'sendConversationMessage',
+  request: {
+    params: getConversationByIdSchema,
+    body: {
+      required: true,
+      description: 'Message data.',
+      content: {
+        'application/json': {
+          schema: createMessageSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    [HttpStatusCodes.CREATED]: {
+      description: 'Message answered successfully',
+      content: {
+        'application/json': {
+          schema: createMessageResponseSchema,
+        },
+      },
+    },
+    [HttpStatusCodes.BAD_REQUEST]: {
+      description: 'Invalid request data',
+      content: {
+        'application/json': {
+          schema: errorResponseSchema,
         },
       },
     },
@@ -103,10 +206,19 @@ const getConversationByIdRoute = createRoute({
   },
 });
 
-router.openapi(getConversationByIdRoute, async (c) => {
-  const getConversationByIdInput = c.req.valid('param');
-  const conversationFound = await conversationsService.getConversationById(getConversationByIdInput);
-  return c.json({ status: true, data: conversationFound }, HttpStatusCodes.OK);
+router.openapi(createMessageRoute, async (c) => {
+  const { id } = c.req.valid('param');
+  const body = c.req.valid('json');
+
+  const result = await messagesService.sendMessage(id, body);
+
+  return c.json(
+    {
+      success: true,
+      data: result,
+    },
+    HttpStatusCodes.CREATED,
+  );
 });
 
 export default router;
