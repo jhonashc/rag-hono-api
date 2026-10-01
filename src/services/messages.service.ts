@@ -4,7 +4,7 @@ import * as HttpStatusCodes from 'stoker/http-status-codes';
 
 import { openai } from '@/config/openai';
 
-import type { ChatMessage, MessageSource } from '@/interfaces/messages.interface';
+import type { ChatMessage, ListMessagesOptions, MessageSource, PaginatedMessages } from '@/interfaces/messages.interface';
 
 import { ConversationsRepository } from '@/repositories/conversations.repository';
 import { MessagesRepository } from '@/repositories/messages.repository';
@@ -28,6 +28,29 @@ export class MessagesService {
     private readonly messagesRepository: MessagesRepository,
     private readonly embeddingsService: EmbeddingsService,
   ) {}
+
+  async getMessagesByConversationId(conversationId: string, options: ListMessagesOptions): Promise<PaginatedMessages> {
+    const conversationFound = await this.conversationsRepository.getConversationById({ id: conversationId });
+
+    if (!conversationFound) {
+      throw new HTTPException(HttpStatusCodes.NOT_FOUND, {
+        message: `The conversation with id ${conversationId} has not been found`,
+      });
+    }
+
+    const [messages, total] = await Promise.all([
+      this.messagesRepository.getMessagesByConversationId(conversationId, options),
+      this.messagesRepository.countMessagesByConversationId(conversationId),
+    ]);
+
+    return {
+      messages,
+      total,
+      limit: options.limit,
+      offset: options.offset,
+      hasMore: options.offset + messages.length < total,
+    };
+  }
 
   async sendMessage(conversationId: string, input: CreateMessageInput): Promise<SendMessageResult> {
     const conversationFound = await this.conversationsRepository.getConversationById({ id: conversationId });

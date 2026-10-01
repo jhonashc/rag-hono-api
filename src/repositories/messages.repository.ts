@@ -9,6 +9,7 @@ import type {
   CreateChatMessageInput,
   CreateMessageSourceInput,
   CreatedChatConversation,
+  ListMessagesOptions,
   MessageSource,
   MessageSourceRow,
   RetrievedChunk,
@@ -68,6 +69,32 @@ export class MessagesRepository {
 
       return { userMessage, assistantMessage, sources };
     });
+  }
+
+  async getMessagesByConversationId(
+    conversationId: string,
+    options: ListMessagesOptions,
+    tx: SQL = sql,
+  ): Promise<ChatMessage[]> {
+    const rows = await tx<ChatMessageRow[]>`
+      SELECT id, conversation_id, role, content, prompt_tokens, completion_tokens, created_at
+      FROM chat_messages
+      WHERE conversation_id = ${conversationId}
+      ORDER BY created_at ASC, id ASC
+      LIMIT ${options.limit} OFFSET ${options.offset}
+    `;
+
+    return rows.map((row) => MessagesMapper.toChatMessage(row));
+  }
+
+  async countMessagesByConversationId(conversationId: string, tx: SQL = sql): Promise<number> {
+    const [row] = await tx<Array<{ total: number }>>`
+      SELECT COUNT(*)::int AS total
+      FROM chat_messages
+      WHERE conversation_id = ${conversationId}
+    `;
+
+    return row?.total ?? 0;
   }
 
   async searchSimilarChunks(

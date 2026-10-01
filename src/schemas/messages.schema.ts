@@ -36,4 +36,50 @@ export const createMessageResponseSchema = z.object({
   }),
 });
 
+export const listMessagesQuerySchema = z.object({
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(100)
+    .default(20)
+    .openapi({
+      param: {
+        name: 'limit',
+        in: 'query',
+      },
+      example: 20,
+      description: 'Maximum number of messages to return',
+    }),
+  offset: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .default(0)
+    .openapi({
+      param: {
+        name: 'offset',
+        in: 'query',
+      },
+      example: 0,
+      description: 'Number of messages to skip',
+    }),
+});
+
+export const listMessagesMetaSchema = z
+  .object({
+    total: z.number().int().min(0),
+    limit: z.number().int(),
+    offset: z.number().int(),
+    hasMore: z.boolean(),
+  })
+  .openapi('ListMessagesMeta');
+
+export const listMessagesResponseSchema = z.object({
+  success: z.literal(true),
+  data: z.array(chatMessageSchema),
+  meta: listMessagesMetaSchema,
+});
+
 export type CreateMessageInput = z.infer<typeof createMessageSchema>;
+export type ListMessagesQueryInput = z.infer<typeof listMessagesQuerySchema>;

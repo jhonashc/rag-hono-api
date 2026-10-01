@@ -59,3 +59,16 @@ export interface RetrievedChunk {
   chunkText: string;
   similarity: number;
 }
+
+export interface ListMessagesOptions {
+  limit: number;
+  offset: number;
+}
+
+export interface PaginatedMessages {
+  messages: ChatMessage[];
+  total: number;
+  limit: number;
+  offset: number;
+  hasMore: boolean;
+}

@@ -11,8 +11,14 @@ import {
   getConversationByIdSchema,
   createConversationResponseSchema,
   createConversationDocumentSchema,
+  getConversationByIdResponseSchema,
 } from '@/schemas/conversations.schema';
-import { createMessageResponseSchema, createMessageSchema } from '@/schemas/messages.schema';
+import {
+  createMessageResponseSchema,
+  createMessageSchema,
+  listMessagesQuerySchema,
+  listMessagesResponseSchema,
+} from '@/schemas/messages.schema';
 import { createDocumentResponseSchema } from '@/schemas/documents.schema';
 import { errorResponseSchema } from '@/schemas/error.schema';
 
@@ -88,6 +94,58 @@ router.openapi(createConversationRoute, async (c) => {
       data: createdConversation,
     },
     HttpStatusCodes.CREATED,
+  );
+});
+
+const getConversationByIdRoute = createRoute({
+  method: 'get',
+  path: '/:id',
+  tags: ['Conversations'],
+  summary: 'Get a conversation by id',
+  description: 'Retrieves a single conversation by its unique identifier.',
+  operationId: 'getConversationById',
+  request: {
+    params: getConversationByIdSchema,
+  },
+  responses: {
+    [HttpStatusCodes.OK]: {
+      description: 'Conversation retrieved successfully',
+      content: {
+        'application/json': {
+          schema: getConversationByIdResponseSchema,
+        },
+      },
+    },
+    [HttpStatusCodes.BAD_REQUEST]: {
+      description: 'Invalid request data',
+      content: {
+        'application/json': {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    [HttpStatusCodes.NOT_FOUND]: {
+      description: 'Conversation not found',
+      content: {
+        'application/json': {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+router.openapi(getConversationByIdRoute, async (c) => {
+  const { id } = c.req.valid('param');
+
+  const conversation = await conversationsService.getConversationById({ id });
+
+  return c.json(
+    {
+      success: true,
+      data: conversation,
+    },
+    HttpStatusCodes.OK,
   );
 });
 
@@ -211,6 +269,66 @@ router.openapi(createMessageRoute, async (c) => {
       data: result,
     },
     HttpStatusCodes.CREATED,
+  );
+});
+
+const listConversationMessagesRoute = createRoute({
+  method: 'get',
+  path: '/:id/messages',
+  tags: ['Conversations'],
+  summary: 'List conversation messages',
+  description: 'Retrieves paginated chat messages of a conversation ordered by creation date.',
+  operationId: 'listConversationMessages',
+  request: {
+    params: getConversationByIdSchema,
+    query: listMessagesQuerySchema,
+  },
+  responses: {
+    [HttpStatusCodes.OK]: {
+      description: 'Messages retrieved successfully',
+      content: {
+        'application/json': {
+          schema: listMessagesResponseSchema,
+        },
+      },
+    },
+    [HttpStatusCodes.BAD_REQUEST]: {
+      description: 'Invalid request data',
+      content: {
+        'application/json': {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+    [HttpStatusCodes.NOT_FOUND]: {
+      description: 'Conversation not found',
+      content: {
+        'application/json': {
+          schema: errorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+router.openapi(listConversationMessagesRoute, async (c) => {
+  const { id } = c.req.valid('param');
+  const { limit, offset } = c.req.valid('query');
+
+  const result = await messagesService.getMessagesByConversationId(id, { limit, offset });
+
+  return c.json(
+    {
+      success: true,
+      data: result.messages,
+      meta: {
+        total: result.total,
+        limit: result.limit,
+        offset: result.offset,
+        hasMore: result.hasMore,
+      },
+    },
+    HttpStatusCodes.OK,
   );
 });
 
