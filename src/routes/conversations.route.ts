@@ -4,8 +4,6 @@ import { HTTPException } from 'hono/http-exception';
 
 import * as HttpStatusCodes from 'stoker/http-status-codes';
 
-import { TransactionManager } from '@/db/transaction';
-
 import { ConversationsRepository } from '@/repositories/conversations.repository';
 
 import {
@@ -35,17 +33,12 @@ const documentsService = new DocumentsService(
   new EmbeddingsService(),
 );
 
-const conversationsService = new ConversationsService(
-  new ConversationsRepository(),
-  documentsService,
-  new TransactionManager(),
-);
+const conversationsService = new ConversationsService(new ConversationsRepository());
 
 const messagesService = new MessagesService(
   new ConversationsRepository(),
   new MessagesRepository(),
   new EmbeddingsService(),
-  new TransactionManager(),
 );
 
 const createConversationRoute = createRoute({

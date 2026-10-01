@@ -9,7 +9,7 @@
 
 ## Data access
 
-- Raw `Bun.SQL` only; transactions via `TransactionManager.run()`.
+- Raw `Bun.SQL` only inside `repositories/` — services never touch the DB client. Multi-statement atomicity lives in repository methods via `sql.begin(...)`.
 - One row per insert, looped inside the `tx`. Never the bulk `tx(arrayOfObjects)` helper.
 
 ## API surface

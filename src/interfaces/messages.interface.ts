@@ -42,6 +42,18 @@ export interface MessageSource {
 
 export interface CreateMessageSourceInput extends Omit<MessageSource, 'id' | 'createdAt'> {}
 
+export interface CreateChatConversationInput {
+  userMessage: CreateChatMessageInput;
+  assistantMessage: CreateChatMessageInput;
+  sources: Omit<CreateMessageSourceInput, 'messageId'>[];
+}
+
+export interface CreatedChatConversation {
+  userMessage: ChatMessage;
+  assistantMessage: ChatMessage;
+  sources: MessageSource[];
+}
+
 export interface RetrievedChunk {
   chunkId: string;
   chunkText: string;

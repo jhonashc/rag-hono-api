@@ -23,7 +23,7 @@ Setup order: copy `.env.template` → `.env` → `docker compose up -d` → `bun
 - Layers: `routes/` → `services/` → `repositories/` → `db/client.ts` (raw `bun` `SQL` client, pool `max: 20`). Shared types in `interfaces/`, row→domain mapping in `mappers/`, Zod contracts in `schemas/`.
 - Path alias `@/*` → `src/*` (`tsconfig.json`). Import via `@/...`, never relative.
 - DI: services/repositories are constructed manually in route files (e.g. `src/routes/conversations.route.ts`), not via a container. Follow that pattern.
-- DB access: raw SQL with `Bun.SQL`, transactions via `TransactionManager.run()` (`src/db/transaction.ts`). There is no ORM and no migration framework — `db.sql` is a single non-idempotent `CREATE` script; re-running against a migrated DB fails.
+- DB access: raw SQL with `Bun.SQL`, and only inside `repositories/` — services never touch the DB client. Repositories accept an optional `tx: SQL = sql` client; multi-statement atomicity is owned by repository methods via `sql.begin(...)`. There is no ORM and no migration framework — `db.sql` is a single non-idempotent `CREATE` script; re-running against a migrated DB fails.
 - RAG chat flow (`MessagesService.sendMessage`): embed query → vector search scoped by conversation (`<=>`, `TOP_K_CHUNKS` const) → OpenRouter chat (`CHAT_MODEL` const, a `:free` model — not an env var) → one transaction saving user message (tokens 0,0), assistant message (real `usage` tokens), and `message_sources` with rank/similarity.
 
 ## Conventions & gotchas

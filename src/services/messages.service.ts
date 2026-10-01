@@ -4,8 +4,6 @@ import * as HttpStatusCodes from 'stoker/http-status-codes';
 
 import { openai } from '@/config/openai';
 
-import { TransactionManager } from '@/db/transaction';
-
 import type { ChatMessage, MessageSource } from '@/interfaces/messages.interface';
 
 import { ConversationsRepository } from '@/repositories/conversations.repository';
@@ -29,7 +27,6 @@ export class MessagesService {
     private readonly conversationsRepository: ConversationsRepository,
     private readonly messagesRepository: MessagesRepository,
     private readonly embeddingsService: EmbeddingsService,
-    private readonly transactionManager: TransactionManager,
   ) {}
 
   async sendMessage(conversationId: string, input: CreateMessageInput): Promise<SendMessageResult> {
@@ -72,7 +69,7 @@ export class MessagesService {
       ],
     });
 
-    const answer = completion.choices.at(0)?.message?.content?.trim();
+    const answer = completion?.choices.at(0)?.message?.content?.trim();
 
     if (!answer) {
       throw new HTTPException(HttpStatusCodes.BAD_GATEWAY, {
@@ -83,44 +80,26 @@ export class MessagesService {
     const promptTokens = completion.usage?.prompt_tokens ?? 0;
     const completionTokens = completion.usage?.completion_tokens ?? 0;
 
-    return this.transactionManager.run(async (tx) => {
-      const userMessage = await this.messagesRepository.createChatMessage(
-        {
-          conversationId,
-          role: 'user',
-          content: input.content,
-          promptTokens: 0,
-          completionTokens: 0,
-        },
-        tx,
-      );
-
-      if (!userMessage) throw new Error('Failed to create user message');
-
-      const assistantMessage = await this.messagesRepository.createChatMessage(
-        {
-          conversationId,
-          role: 'assistant',
-          content: answer,
-          promptTokens,
-          completionTokens,
-        },
-        tx,
-      );
-
-      if (!assistantMessage) throw new Error('Failed to create assistant message');
-
-      const sources = await this.messagesRepository.createMessageSources(
-        retrievedChunks.map((chunk, index) => ({
-          messageId: assistantMessage.id,
-          chunkId: chunk.chunkId,
-          rank: index + 1,
-          similarityScore: chunk.similarity,
-        })),
-        tx,
-      );
-
-      return { userMessage, assistantMessage, sources };
+    return this.messagesRepository.createChatConversation({
+      userMessage: {
+        conversationId,
+        role: 'user',
+        content: input.content,
+        promptTokens: 0,
+        completionTokens: 0,
+      },
+      assistantMessage: {
+        conversationId,
+        role: 'assistant',
+        content: answer,
+        promptTokens,
+        completionTokens,
+      },
+      sources: retrievedChunks.map((chunk, index) => ({
+        chunkId: chunk.chunkId,
+        rank: index + 1,
+        similarityScore: chunk.similarity,
+      })),
     });
   }
 }

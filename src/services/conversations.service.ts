@@ -8,15 +8,9 @@ import { ConversationsRepository } from '@/repositories/conversations.repository
 
 import type { CreateConversationInput, GetConversationByIdInput } from '@/schemas/conversations.schema';
 
-import { TransactionManager } from '@/db/transaction';
-
-import { DocumentsService } from '@/services/documents.service';
-
 export class ConversationsService {
   constructor(
-    private readonly conversationsRepository: ConversationsRepository,
-    private readonly documentsService: DocumentsService,
-    private readonly transactionManager: TransactionManager,
+    private readonly conversationsRepository: ConversationsRepository
   ) {}
 
   async createConversation(input: CreateConversationInput): Promise<Conversation> {

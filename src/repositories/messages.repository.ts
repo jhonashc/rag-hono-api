@@ -5,8 +5,10 @@ import { sql } from '@/db/client';
 import type {
   ChatMessage,
   ChatMessageRow,
+  CreateChatConversationInput,
   CreateChatMessageInput,
   CreateMessageSourceInput,
+  CreatedChatConversation,
   MessageSource,
   MessageSourceRow,
   RetrievedChunk,
@@ -47,6 +49,25 @@ export class MessagesRepository {
     }
 
     return createdSources;
+  }
+
+  async createChatConversation(input: CreateChatConversationInput): Promise<CreatedChatConversation> {
+    return sql.begin(async (tx) => {
+      const userMessage = await this.createChatMessage(input.userMessage, tx);
+
+      if (!userMessage) throw new Error('Failed to create user message');
+
+      const assistantMessage = await this.createChatMessage(input.assistantMessage, tx);
+
+      if (!assistantMessage) throw new Error('Failed to create assistant message');
+
+      const sources = await this.createMessageSources(
+        input.sources.map((source) => ({ ...source, messageId: assistantMessage.id })),
+        tx,
+      );
+
+      return { userMessage, assistantMessage, sources };
+    });
   }
 
   async searchSimilarChunks(
